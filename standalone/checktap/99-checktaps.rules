@@ -1,0 +1,4 @@
+#rules for checktap
+
+SUBSYSTEMS=="usb",ATTRS{idVendor}=="2407",ATTRS{idProduct}=="3004",MODE="0666"
+

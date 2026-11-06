@@ -1,0 +1,11 @@
+#!/bin/bash
+
+scr_dir=`readlink -f $0 | xargs dirname`
+tst_name=`basename $scr_dir`
+
+source $scr_dir/../__aux/cheker_helper.sh
+
+grep "'msg_id': 0x00008" $trace_py > /dev/null  &&
+grep "'msg_id': 0x00009" $trace_py > /dev/null # MSG_FUNCTION_ENTRY/EXIT
+
+make_result $? $tst_name

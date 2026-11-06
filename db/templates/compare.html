@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TPMS Comparison</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+{% if serve_mode %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report.css') }}">
+{% else %}
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; color: #333; }
+.container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+.header { background: #1a237e; color: white; padding: 20px 30px; border-radius: 8px 8px 0 0; }
+.section { background: white; margin: 15px 0; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.section h2 { font-size: 18px; margin-bottom: 15px; color: #1a237e; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #e8eaf6; padding: 8px; text-align: left; }
+td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+</style>
+{% endif %}
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>TPMS Profile Comparison</h1>
+        <div style="opacity:0.8;font-size:14px;margin-top:5px;">Jobs: {{ jobs_str }}</div>
+    </div>
+    {% for metric, data in sections_data.items() %}
+    <div class="section">
+        <h2>{{ metric }}</h2>
+        <canvas id="chart_{{ metric }}" height="80"></canvas>
+        <table style="margin-top:15px;">
+            <tr><th>Job</th><th>Build</th><th>Value</th><th>Unit</th></tr>
+            {% for d in data %}
+            <tr><td>{{ d.job_name }}</td><td>{{ d.build_number or 'N/A' }}</td><td>{{ "%.2f"|format(d.metric_value or 0) }}</td><td>{{ d.unit or '' }}</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endfor %}
+</div>
+<script>
+var chartsData = {{ js_data|safe }};
+Object.keys(chartsData).forEach(function(metric) {
+    var ctx = document.getElementById('chart_' + metric);
+    if (!ctx) return;
+    var d = chartsData[metric];
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: d.labels,
+            datasets: [{
+                label: metric, data: d.values,
+                backgroundColor: '#1a237e',
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+});
+</script>
+</body>
+</html>

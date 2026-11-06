@@ -1,0 +1,1 @@
+{'tag_name': 'test', 'test_name': 'memory_usage_test', 'test_state': 'success', 'attrs': {'name': 'Idle Memory Usage', 'executed': 'yes'}, 'sub_tag_list': [{'tag_name': 'metrics', 'attrs': {'name': 'IdleMemoryUsage', 'val': '488', 'unit': 'MB', 'isRelevant': 'true'}}]}

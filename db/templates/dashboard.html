@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TPMS Performance Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/run.css') }}">
+</head>
+<body>
+<div class="layout">
+    <div class="sidebar">
+        <div class="sidebar-header" onclick="goHome()">
+            <h1>TPMS</h1>
+            <div class="sub">Tizen Performance Monitoring System</div>
+
+        </div>
+        <ul class="menu">
+            <li class="active" onclick="showMenuPage('summary', this)">TPMS Summary</li>
+            <li onclick="showMenuPage('compare', this)">Compare</li>
+            <li onclick="showMenuPage('run', this)">▶ Run Test</li>
+            <li id="labelManagerMenu" style="display:none;" onclick="showMenuPage('admin', this)">📋 Label Manager</li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="sidebar-about" id="sidebarAbout" onclick="showMenuPage('about', this)">
+                About TPMS
+            </div>
+
+            <a href="#" id="jenkinsLink" class="sidebar-link" target="_blank">Performance Tests ↗</a>
+            <a href="https://github.sec.samsung.net/tizen-sys-con/TPMS-standalone/issues" class="sidebar-link" target="_blank">Report Issue ↗</a>
+            <div class="sidebar-admin" id="sidebarAdmin" onclick="showAdminLoginModal()" style="display:none;">
+                🔐 Admin
+            </div>
+            <div class="sidebar-admin-user" id="sidebarAdminUser" style="display:none;">
+                <span id="adminUsername"></span>
+                <span class="sidebar-admin-logout" onclick="adminLogout()">Logout</span>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="content">
+
+        <!-- View 1: Summary Page -->
+        <div id="page-summary" class="page active">
+            <div class="section">
+                <h2>TPMS Summary - Latest Build Results</h2>
+                <div style="margin-bottom:15px;">
+                    <input type="text" id="summarySearchInput" placeholder="Search by Profile name or Build ID..."
+                           style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;"
+                           oninput="filterSummaryTable()">
+                </div>
+                <div id="summaryContent">
+                    <div class="loading-msg">Loading summary data...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View 2: Profile Detail Page -->
+        <div id="page-profile" class="page">
+            <div class="section">
+                <div class="btn-row" style="margin-bottom:15px;">
+                    <button class="btn btn-back" onclick="showMenuPage('summary', document.querySelector('.menu li'))">&#8592; Back to Summary</button>
+                </div>
+                <h2 id="profileTitle"></h2>
+                <div id="profileTrendSection" style="margin-bottom:15px;max-height:60vh;">
+                    <h3 style="font-size:15px;color:#1a237e;margin-bottom:10px;">Key Metric Trends (Last 30 Builds)</h3>
+                    <div id="profileTrendGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;overflow-y:auto;"></div>
+                </div>
+                <div id="profileContent">
+                    <div class="loading-msg">Loading...</div>
+                </div>
+                <div id="profilePagination" class="pagination"></div>
+            </div>
+        </div>
+
+        <!-- View 3: Build Detail Page -->
+        <div id="page-build" class="page">
+            <div class="section">
+                <div class="btn-row" style="margin-bottom:15px;">
+                    <button class="btn btn-back" onclick="showProfilePage(currentProfileJob, currentProfilePage)">&#8592; Back to Profile</button>
+                </div>
+                <h2 id="buildTitle"></h2>
+                <iframe id="reportFrame" class="report-frame" sandbox="allow-scripts allow-same-origin"></iframe>
+            </div>
+        </div>
+
+        <!-- Compare Page -->
+        <div id="page-compare" class="page">
+            <div class="section" style="position:relative;">
+                <h2>Target Selection<span class="info-icon" onclick="toggleInfoTooltip(event)">i</span></h2>
+                <div style="margin-bottom:15px;">
+                    <button class="btn" id="mode2Btn" onclick="setCompareMode(2)" style="background:#1a237e;color:white;margin-right:5px;">2개 비교</button>
+                    <button class="btn" id="mode3Btn" onclick="setCompareMode(3)" style="background:#999;color:white;">3개 비교</button>
+                    <button class="btn" id="loadMoreProfilesBtn" onclick="loadMoreCompareProfiles()" style="display:none;margin-left:10px;">Load more profiles</button>
+                    <span id="compareCatalogInfo" class="page-info"></span>
+                </div>
+                <div class="info-tooltip" id="infoTooltip">
+                    <ul>
+                        <li>Target 2 is the baseline performance, Target 1 is the value being compared</li>
+                        <li>Green: Target 1 improved by 10%+ vs Target 2</li>
+                        <li>Red: Target 1 degraded by 10%+ vs Target 2</li>
+                    </ul>
+                </div>
+                <div class="target-grid" id="compareGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:15px;">
+                    <div class="target-box">
+                        <h3>Target 1</h3>
+                        <div class="control-group">
+                            <label>Profile</label>
+                            <select id="jobA" onchange="updateBuildIds('A')" disabled></select>
+                        </div>
+                        <div class="control-group">
+                            <label>Build ID</label>
+                            <select id="buildIdA" disabled></select>
+                        </div>
+                    </div>
+                    <div class="target-box">
+                        <h3>Target 2</h3>
+                        <div class="control-group">
+                            <label>Profile</label>
+                            <select id="jobB" onchange="updateBuildIds('B')" disabled></select>
+                        </div>
+                        <div class="control-group">
+                            <label>Build ID</label>
+                            <select id="buildIdB" disabled></select>
+                        </div>
+                    </div>
+                    <div class="target-box" id="target3Box" style="display:none;">
+                        <h3>Target 3</h3>
+                        <div class="control-group">
+                            <label>Profile</label>
+                            <select id="jobC" onchange="updateBuildIds('C')" disabled></select>
+                        </div>
+                        <div class="control-group">
+                            <label>Build ID</label>
+                            <select id="buildIdC" disabled></select>
+                        </div>
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-primary" id="compareBtn" onclick="compare()" disabled>Compare</button>
+                    <button class="btn btn-secondary" id="downloadBtn" onclick="downloadExcel()" disabled>Download Excel</button>
+                    <button class="btn" id="copyLinkBtn" onclick="copyCompareLink()" disabled style="background:#455a64;color:white;">Copy Link</button>
+                </div>
+
+            </div>
+            <div id="resultArea" class="section" style="display:none;">
+                <h2 id="resultTitle"></h2>
+                <div class="compare-grid" id="summaryCards"></div>
+                <h3 style="font-size:15px;color:#1a237e;margin:15px 0 10px;">Metric Comparison Charts</h3>
+                <div id="compareChartContainer" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:10px;"></div>
+                <table style="margin-top:15px;">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th id="thA">Target 1</th>
+                            <th id="thB">Target 2</th>
+                            <th>Diff</th>
+                            <th>Change %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="compareBody"></tbody>
+                </table>
+            </div>
+            <div id="compareDetailArea" class="section" style="display:none;">
+                <h2>Detailed Comparison</h2>
+            </div>
+            <div id="emptyArea" class="section">
+                <div class="empty-msg">Select profiles and build IDs, then click Compare</div>
+            </div>
+        </div>
+
+        <!-- Run Test Page -->
+        <div id="page-run" class="page">
+            <div class="section">
+                <h2>▶ Run Performance Test</h2>
+
+                <!-- Device Status -->
+                <div id="runDeviceStatus" class="run-device-status disconnected">
+                    <span class="device-dot"></span> Checking device...
+                </div>
+
+                <!-- Configuration Grid -->
+                <div class="run-config-grid">
+                    <div class="run-config-box">
+                        <h3>Test Configuration</h3>
+                        <div class="control-group">
+                            <label>Test Type</label>
+                            <select id="runTestType" style="width:100%;"></select>
+                        </div>
+                        <div class="control-group">
+                            <label>Profile</label>
+                            <select id="runProfile" onchange="onProfileChange()" style="width:100%;">
+                                <option value="">-- Select Profile --</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label>Snapshot ID</label>
+                            <select id="runSnapshotId" style="width:100%;">
+                                <option value="latest">latest</option>
+                            </select>
+                            <span id="runSnapshotLoading" class="run-snapshot-loading" style="display:none;">
+                                <span class="run-loading-spinner"></span> Loading snapshots...
+                            </span>
+                        </div>
+                        <div class="control-group">
+                            <label style="display:flex;align-items:center;gap:6px;">
+                                <input type="checkbox" id="runTestOnly" style="width:auto;">
+                                Test Only (skip image download & flash)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="run-config-box">
+                        <h3>Test Items</h3>
+                        <div id="runTestItems" class="run-test-items">
+                            <div class="empty-msg">Select a profile first</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Run Button -->
+                <div class="run-actions">
+                    <button class="btn btn-primary" id="runTestBtn" onclick="runTest()">▶ Run Test</button>
+                    <span id="runCurrentTask" style="font-size:13px;color:#666;"></span>
+                </div>
+            </div>
+
+            <!-- Task Monitor (log viewer) -->
+            <div id="runTaskMonitor" class="section" style="display:none;">
+                <h2>Task Monitor</h2>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <span class="run-task-status-badge pending" id="runMonitorStatus">pending</span>
+                    <div class="run-log-auto-scroll">
+                        <input type="checkbox" id="runLogAutoScroll" checked onchange="toggleLogAutoScroll()">
+                        <label for="runLogAutoScroll">Auto-scroll</label>
+                    </div>
+                </div>
+                <div id="runLogViewer" class="run-log-viewer"></div>
+                <div id="runTaskResult" style="margin-top:10px;"></div>
+            </div>
+
+            <!-- Task Queue & History -->
+            <div class="section run-queue-section">
+                <h2>Task Queue & History</h2>
+                <div id="runQueueStatus" class="run-queue-status"></div>
+                <div id="runTaskList"></div>
+            </div>
+        </div>
+
+        <!-- About TPMS Page -->
+        <div id="page-about" class="page">
+            <div class="section">
+                <h2>About TPMS</h2>
+                <div class="about-content">
+                    <div class="about-title">TPMS (Tizen Performance Monitoring System)</div>
+                    <p class="about-intro">Tizen 타겟 디바이스의 성능을 자동으로 측정하고 모니터링하는 시스템입니다. 다양한 Tizen 프로파일과 버전에 걸쳐 핵심 성능 지표를 측정하여, 성능 회귀(regression)와 개선사항을 추적할 수 있습니다.</p>
+
+
+                    <div class="about-section">
+                        <h3>시스템 아키텍처</h3>
+                        <div class="about-diagram">
+                            <div class="diagram-box diagram-jenkins">
+                                <span class="diagram-icon">🔄</span>
+                                <span class="diagram-label">Jenkins CI</span>
+                                <span class="diagram-sub">새 Tizen 빌드 생성 시 자동으로 테스트 트리거</span>
+                            </div>
+                            <div class="diagram-arrow">→</div>
+                            <div class="diagram-box diagram-tpms">
+                                <span class="diagram-icon">⚡</span>
+                                <span class="diagram-label">TPMS Standalone</span>
+                                <span class="diagram-sub">타겟 디바이스에 이미지 플래싱 후 성능 테스트 실행</span>
+                            </div>
+                            <div class="diagram-arrow">→</div>
+                            <div class="diagram-box diagram-db">
+                                <span class="diagram-icon">💾</span>
+                                <span class="diagram-label">SQLite DB</span>
+                                <span class="diagram-sub">측정 결과를 저장하여 추세 분석 지원</span>
+                            </div>
+                            <div class="diagram-arrow">→</div>
+                            <div class="diagram-box diagram-dashboard">
+                                <span class="diagram-icon">📊</span>
+                                <span class="diagram-label">Web Dashboard</span>
+                                <span class="diagram-sub">결과 시각화 및 빌드 간 비교 기능 제공</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="about-section">
+                        <h3>측정 항목</h3>
+                        <div class="metric-grid">
+                            <div class="metric-card"><strong>Booting Time</strong><span>시스템 부팅 소요 시간</span></div>
+                            <div class="metric-card"><strong>Memory Usage</strong><span>시스템 및 프로세스 메모리 사용량</span></div>
+                            <div class="metric-card"><strong>App Launching</strong><span>애플리케이션 실행 시간</span></div>
+                            <div class="metric-card"><strong>Web App Launching</strong><span>웹 애플리케이션 실행 시간</span></div>
+                            <div class="metric-card"><strong>DALI 3D UI</strong><span>3D UI 렌더링 성능</span></div>
+                            <div class="metric-card"><strong>Octane</strong><span>JavaScript 엔진 벤치마크</span></div>
+                            <div class="metric-card"><strong>NAND Usage</strong><span>저장공간 사용량</span></div>
+                            <div class="metric-card"><strong>Dependency Info</strong><span>라이브러리 의존성 분석</span></div>
+                        </div>
+                    </div>
+
+                    <div class="about-section">
+                        <h3>워크플로우</h3>
+                        <ol class="workflow-list">
+                            <li>Jenkins CI에서 새 Tizen 빌드가 생성되면 TPMS 테스트 잡을 트리거합니다</li>
+                            <li>TPMS가 타겟 디바이스에 새 이미지를 플래싱하고 설정된 성능 테스트를 실행합니다</li>
+                            <li>테스트 결과를 파싱하여 SQLite 데이터베이스에 저장합니다</li>
+                            <li>이 대시보드에서 결과를 시각화하고, 추세를 확인하며 빌드 간 비교를 할 수 있습니다</li>
+                        </ol>
+                    </div>
+
+                    <div class="about-section">
+                        <h3>지원 프로파일</h3>
+                        <p class="about-desc">TPMS는 unified-rpi (32bit/64bit), mobile, wearable, toolchain 등 다양한 Tizen 프로파일을 지원합니다. 새로운 프로파일은 설정 파일을 통해 추가할 수 있습니다.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Admin Page -->
+        <div id="page-admin" class="page">
+            <div class="section">
+                <h2>Admin - Build Labels Manager</h2>
+                <div style="margin-bottom:15px;">
+                    <div class="control-group">
+                        <label>Select Job/Profile</label>
+                        <select id="adminJobSelect" onchange="adminLoadBuilds()" style="width:100%;padding:8px;">
+                            <option value="">-- Select a profile --</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="adminBuildsContainer" style="display:none;">
+                    <h3 style="margin-bottom:10px;">Builds for <span id="adminJobName"></span></h3>
+                    <table style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;width:10%;">Build #</th>
+                                <th style="text-align:left;width:40%;">Build ID</th>
+                                <th style="text-align:left;width:35%;">Current Label</th>
+                                <th style="text-align:left;width:15%;">Action</th>
+
+
+                            </tr>
+                        </thead>
+                        <tbody id="adminBuildsList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Admin Login Modal -->
+<div id="adminLoginModal" class="admin-modal">
+    <div class="admin-modal-content">
+        <div class="admin-modal-header">
+            <h2>Admin Login</h2>
+            <span class="admin-modal-close" onclick="closeAdminLoginModal()">&times;</span>
+        </div>
+        <div class="admin-modal-body">
+            <div class="control-group">
+                <label>Username</label>
+                <input type="text" id="adminUsername_input" placeholder="Enter username" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+            </div>
+            <div class="control-group">
+                <label>Password</label>
+                <input type="password" id="adminPassword_input" placeholder="Enter password" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+            </div>
+            <div id="adminLoginError" style="color:#f44336;margin-bottom:10px;display:none;"></div>
+        </div>
+        <div class="admin-modal-footer">
+            <button class="btn btn-secondary" onclick="closeAdminLoginModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="adminLogin()">Login</button>
+        </div>
+    </div>
+</div>
+
+<!-- Session Timeout Warning Modal -->
+<div id="sessionWarningModal" class="admin-modal">
+    <div class="admin-modal-content" style="max-width:400px;">
+        <div class="admin-modal-header">
+            <h2>⏰ Session Expiring Soon</h2>
+        </div>
+        <div class="admin-modal-body">
+            <p style="font-size:16px;margin-bottom:15px;">Your admin session will expire in <span id="warningTimeLeft">5:00</span></p>
+            <p style="font-size:14px;color:#666;">Click "Extend Session" to continue working or "Logout" to end your session.</p>
+        </div>
+        <div class="admin-modal-footer">
+            <button class="btn btn-secondary" onclick="adminLogout()">Logout</button>
+            <button class="btn btn-primary" onclick="extendSession()">Extend Session</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/run.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+</body>
+</html>

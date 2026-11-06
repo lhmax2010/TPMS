@@ -1,0 +1,24 @@
+#Tizen SDK path
+__TIZENSDK=/home/anton/tizen-sdk
+#traceparser directory
+__TRACE_PARSER=/home/anton/projects/SABA/saba_git/swap/trace_parser
+#sdb directory
+__SDBD=/home/ragnvald/dev/sdbd/bin
+#CROSS_COMPILE for emulators
+export __CROSS_COMPILE_i386=${__TIZENSDK}/tools/i386-linux-gnueabi-gcc-4.6/bin/i386-linux-gnueabi-
+export __CROSS_COMPILE_arm=${__TIZENSDK}/tools/arm-linux-gnueabi-gcc-4.6/bin/arm-linux-gnueabi-
+#ROOTSTRAP for emulators
+export __ROOTSTRAP_i386=${__TIZENSDK}/platforms/tizen-3.0/mobile/rootstraps/mobile-3.0-emulator.core
+export __ROOTSTRAP_arm=${__TIZENSDK}/platforms/tizen-3.0/mobile/rootstraps/mobile-3.0-device.core
+
+PATH=$PATH:${__TIZENSDK}/tools/ide/bin:${__TIZENSDK}/tools:${__TRACE_PARSER}:${__SDBD}
+
+#for i in $(dirname ${BASH_SOURCE[0]})/__comp/*; do
+#	source $i
+#done
+
+__TIZENSDK=
+__TRACE_PARSER=
+__SDBD=
+
+

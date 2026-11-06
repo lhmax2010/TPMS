@@ -1,0 +1,11 @@
+[/home/abuild/rpmbuild/BUILD/boot-animation-0.3.7/src/boot.c/main/229] fd == 1
+monitor dir /opt/share/.elementary/5001/config/mobile
+xready_cb
+argc 0 [/usr/bin/boot-animation]
+argc 1 [--start]
+Sound status: 1
+Init animation
+Create Window
+Sound on!!
+File path: /usr/share/keysound/poweron.ogg
+_end_cb is invoked

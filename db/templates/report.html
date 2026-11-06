@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TPMS Report - {{ job }} #{{ build }}</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+{% if serve_mode %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report.css') }}">
+{% else %}
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; color: #333; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.header { background: linear-gradient(135deg, #1a237e, #3949ab); color: white; padding: 20px 30px; border-radius: 8px 8px 0 0; }
+.header h1 { font-size: 24px; }
+.header .meta { font-size: 14px; opacity: 0.8; margin-top: 5px; }
+.section { background: white; margin: 15px 0; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.section h2 { font-size: 16px; font-weight: 700; margin: -20px -20px 15px -20px; padding: 12px 20px; color: white; border-radius: 8px 8px 0 0; background: linear-gradient(90deg, #1a237e, #283593); }
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+.metric-card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid transparent; transition: transform 0.2s, box-shadow 0.2s; }
+.metric-card:hover { transform: translateY(-4px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+.metric-card:nth-child(1) { border-image: linear-gradient(180deg, #4caf50, #81c784) 1; }
+.metric-card:nth-child(2) { border-image: linear-gradient(180deg, #1a237e, #5c6bc0) 1; }
+.metric-card:nth-child(3) { border-image: linear-gradient(180deg, #6a1b9a, #9c27b0) 1; }
+.metric-card:nth-child(4) { border-image: linear-gradient(180deg, #f57c00, #ff9800) 1; }
+.metric-card:nth-child(5) { border-image: linear-gradient(180deg, #00796b, #26a69a) 1; }
+.metric-card:nth-child(6) { border-image: linear-gradient(180deg, #c2185b, #e91e63) 1; }
+.metric-card.card-regression { background: white; border-left: 4px solid transparent; border-image: linear-gradient(180deg, #f44336, #ef5350) 1; }
+.metric-title { font-size: 14px; font-weight: 600; color: #666; }
+.metric-current { font-size: 28px; font-weight: 700; color: #1a237e; margin: 5px 0; }
+.metric-previous { font-size: 12px; color: #999; }
+.change-good { color: #4caf50; font-weight: 600; }
+.change-bad { color: #f44336; font-weight: 600; }
+.change-neutral { color: #999; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: linear-gradient(180deg, #e8eaf6, #c5cae9); padding: 10px; text-align: left; font-weight: 600; }
+td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+tr:hover { background: #f5f5f5; }
+.row-regression { background: #ffebee; }
+.row-regression:hover { background: #ffcdd2; }
+.val-bad { color: #f44336; font-weight: 700; }
+.val-good { color: #2e7d32; font-weight: 700; }
+.row-improved { background: #e8f5e9; }
+.row-improved:hover { background: #c8e6c9; }
+.section-divider td { background: #37474f; font-weight: 700; text-align: center; color: white; font-size: 14px; padding: 10px; }
+.compare-table { margin-bottom: 15px; }
+.meminfo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.pie-container { position: relative; }
+.collapsible-header { cursor: pointer; user-select: none; }
+.collapsible-header:hover { opacity: 0.8; }
+.collapsible-content { display: none; }
+.collapsible-content.expanded { display: grid; }
+.popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+.popup-overlay.active { display: flex; }
+.popup { background: white; padding: 30px; border-radius: 8px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto; }
+.popup h2 { margin-bottom: 15px; }
+.popup-close { float: right; cursor: pointer; font-size: 20px; color: #999; }
+</style>
+{% endif %}
+</head>
+
+<body>
+<div class="container">
+    <div class="header">
+        <h1>TPMS Performance Report</h1>
+        <div class="meta">
+            Job: <strong>{{ job }}</strong> |
+            Build: <strong>#{{ build }} ({{ build_id }})</strong> |
+            Time: {{ test_time }}{% if label %} | Label: <span style="color:#ffd54f;font-weight:600;">{{ label }}</span>{% endif %}
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Key Performance Metrics</h2>
+        <div class="metrics-grid">
+            {% for card in cards %}
+            <div class="metric-card {{ 'card-regression' if card.regression else '' }}">
+                <div class="metric-title">{{ card.metric }}</div>
+                <div class="metric-current">{{ card.curr_val }}</div>
+                <div class="metric-previous">prev: {{ card.prev_val }} <span class="{{ card.change_class }}">{{ card.change_str }}</span></div>
+                <canvas id="chart_{{ card.metric }}" height="80"></canvas>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if meminfo_html %}
+    <div class="section">
+        <h2 class="collapsible-header" onclick="toggleMemoryInfo()">
+            <span id="memInfoToggle">&#9654;</span> Memory Info
+        </h2>
+        <div id="memInfoContent" class="collapsible-content">
+            <div class="meminfo-grid">
+                <div class="pie-container">
+                    <canvas id="meminfoPie"></canvas>
+                    <p style="text-align:center;font-size:12px;color:#999;margin-top:5px;">Click pie to see per-process breakdown</p>
+                </div>
+                <div style="overflow-x:auto;"><table>
+                    <thead><tr><th>Item</th><th>Value</th><th>Unit</th></tr></thead>
+                    <tbody>
+                    {% for m in meminfo %}
+                    <tr><td>{{ m.label }}</td><td>{{ "%.0f"|format(m.value) }}</td><td>{{ m.unit }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="section">
+        <h2>Detailed Results (vs Build #{{ prev_build }}, {{ prev_build_id }})</h2>
+        <table id="detailedTable">
+            <thead><tr><th>Test Name</th><th>Current</th><th>Previous</th><th>Change</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for row in table_rows %}
+                {% if row.is_separator %}
+                <tr class="section-divider"><td colspan="5">{{ row.test_name }}</td></tr>
+                {% else %}
+                <tr class="{{ row.row_class }}" data-test-name="{{ row.test_name }}" data-metric-name="{{ row.metric_name }}">
+                    <td class="clickable-test-name">{{ row.indent|safe }}{{ row.test_name }}</td>
+                    <td class="{{ row.val_class }}">{{ row.curr_val }}</td>
+                    <td>{{ row.prev_val }}</td>
+                    <td class="{{ row.change_class }}">{{ row.change_str }}</td>
+                    <td>{{ row.passed }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if compare_html %}
+    <div class="section">
+        <h2>Profile Comparison</h2>
+        {{ compare_html|safe }}
+    </div>
+    {% endif %}
+</div>
+
+<div class="popup-overlay" id="mempsPopup" onclick="closePopup('mempsPopup')">
+    <div class="popup" onclick="event.stopPropagation()" style="display:flex;flex-direction:column;max-height:80vh;">
+        <span class="popup-close" onclick="closePopup('mempsPopup')">&times;</span>
+        <h2>Per-Process Memory (MEMPS) - Build #{{ build }}</h2>
+        <div style="flex:1;overflow:hidden;position:relative;min-height:300px;">
+            <canvas id="mempsChart" style="display:block;"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="popup-overlay" id="trendPopup" onclick="closePopup('trendPopup')">
+    <div class="popup" onclick="event.stopPropagation()" style="display:flex;flex-direction:column;max-height:85vh;min-width:600px;">
+        <span class="popup-close" onclick="closePopup('trendPopup')">&times;</span>
+        <h2 id="trendTitle">Test Trend</h2>
+        <div style="flex:1;overflow-y:auto;">
+            <div id="trendChartContainer" style="position:relative;height:300px;margin-bottom:20px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+            <table id="trendTable" style="width:100%;border-collapse:collapse;font-size:12px;">
+                <thead><tr style="background:#f0f0f0;font-weight:bold;"><th style="padding:8px;border-bottom:1px solid #ddd;">Build</th><th style="padding:8px;border-bottom:1px solid #ddd;">Build ID</th><th style="padding:8px;border-bottom:1px solid #ddd;">Value</th><th style="padding:8px;border-bottom:1px solid #ddd;">Date</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+var reportData = {{ js_data|safe }};
+</script>
+{% if serve_mode %}
+<script src="{{ url_for('static', filename='js/report.js') }}"></script>
+<script>
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', function() { initReport(reportData); });
+} else {
+    initReport(reportData);
+}
+</script>
+{% else %}
+
+<script>
+function initReport(data){var reportData=data;Object.keys(reportData.charts).forEach(function(metric){var ctx=document.getElementById('chart_'+metric);if(!ctx)return;var d=reportData.charts[metric];new Chart(ctx,{type:'line',data:{labels:d.labels,datasets:[{label:metric,data:d.values,borderColor:'#1a237e',backgroundColor:'rgba(26,35,126,0.1)',fill:true,tension:0.3,pointRadius:2}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{display:false},y:{ticks:{font:{size:10}}}}}})});if(reportData.has_meminfo){var pieCtx=document.getElementById('meminfoPie');if(pieCtx){new Chart(pieCtx,{type:'pie',data:{labels:reportData.pie_labels,datasets:[{data:reportData.pie_values,backgroundColor:['#1a237e','#e91e63','#4caf50','#ff9800','#9c27b0','#00bcd4','#795548','#607d8b','#cddc39','#f44336','#3f51b5','#009688']}]},options:{responsive:true,plugins:{legend:{position:'right',labels:{font:{size:11}}},title:{display:true,text:'Memory Info Breakdown (KB)'}},onClick:function(evt,item){if(item.length>0){openMempsPopup()}}}})}}}
+function openMempsPopup(){document.getElementById('mempsPopup').classList.add('active');var ctx=document.getElementById('mempsChart');if(ctx&&!ctx._chart){new Chart(ctx,{type:'bar',data:{labels:reportData.memps_labels,datasets:[{label:'Memory (KB)',data:reportData.memps_values,backgroundColor:'#1a237e'}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},title:{display:true,text:'Per-Process Memory Usage (KB)'}}}})}}
+function closePopup(){document.getElementById('mempsPopup').classList.remove('active')}
+function toggleMemoryInfo(){var content=document.getElementById('memInfoContent');var toggle=document.getElementById('memInfoToggle');if(content.classList.contains('expanded')){content.classList.remove('expanded');toggle.innerHTML='&#9654;'}else{content.classList.add('expanded');toggle.innerHTML='&#9660;'}}
+initReport(reportData);
+
+</script>
+{% endif %}
+</body>
+
+
+</html>

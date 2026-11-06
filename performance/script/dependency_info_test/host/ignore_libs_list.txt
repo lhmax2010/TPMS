@@ -1,0 +1,5 @@
+ld-linux.so
+libc.so
+libgcc_s.so
+libdl.so
+libpthread.so

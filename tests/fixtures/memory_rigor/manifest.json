@@ -1,0 +1,62 @@
+[
+  {
+    "fixture": "tests/fixtures/memory_rigor/gcc_baseline/memps.txt",
+    "source": "memdiff/data/gcc_baseline/boot3/tpms/raw_export/memps.txt",
+    "sha256": "7f3467316545d460bb7463dcc3c5872f2df96f7958fc8f9004c93bd658d380c1"
+  },
+  {
+    "fixture": "tests/fixtures/memory_rigor/gcc_baseline/meminfo.txt",
+    "source": "memdiff/data/gcc_baseline/boot3/tpms/raw_export/meminfo.txt",
+    "sha256": "1fbded40aa730210813b84a332cafdcd0e0423656d72f0fd27360469ba37a9c8"
+  },
+  {
+    "fixture": "tests/fixtures/memory_rigor/gcc_baseline/vmallocinfo.txt",
+    "source": "memdiff/data/gcc_baseline/boot3/tpms/raw_export/vmallocinfo.txt",
+    "sha256": "32ddff0af0bfd1f5c091978d139ae5c38dacc36f7c385cc7a5638620eba1151a"
+  },
+  {
+    "fixture": "tests/fixtures/memory_rigor/gcc_baseline/memory_usage_test.expected",
+    "source": "pre-change parser /tmp/tpms-memory-rigor-baseline/performance/script/memory_usage_test/host/get_used_memory.py",
+    "sha256": "c1011b029ac769abb8b15bbcefc1adafdf111b24b163bac36bebeb1ad9cb7ba8"
+  },
+  {
+    "fixture": "tests/fixtures/memory_rigor/gcc_baseline/process_memory_usage_test.expected",
+    "source": "pre-change parser /tmp/tpms-memory-rigor-baseline/performance/script/process_memory_usage_test/host/get_process_memory_usage.py",
+    "sha256": "7cb7c7b985fbd34adc9db109e45f099ec857dd4ef4424aa6d329c456822b1b65"
+  },
+  {
+    "fixture": "tests/fixtures/memory_rigor/gcc_baseline/memory_info_test.expected",
+    "source": "pre-change parser /tmp/tpms-memory-rigor-baseline/performance/script/memory_info_test/host/get_memory_info.py",
+    "sha256": "1737bbb25686af021fbda7c6f2aa0405598ba5d08f1c2528d0c2ae2b6e3907b1"
+  },
+  {
+    "fixture": "tests/fixtures/memory_rigor/llvm_round3/memps.txt",
+    "source": "memdiff/data/llvm_round3/boot3/tpms/raw_export/memps.txt",
+    "sha256": "b9e1c6c2832dfd59008429e68de773c77a7a512b406327b34f36f8d3bdf1707f"
+  },
+  {
+    "fixture": "tests/fixtures/memory_rigor/llvm_round3/meminfo.txt",
+    "source": "memdiff/data/llvm_round3/boot3/tpms/raw_export/meminfo.txt",
+    "sha256": "fa8744b8bb29335e4ff71aadb080d7a28e3f4d634d2df2308bbb360e42c9e00f"
+  },
+  {
+    "fixture": "tests/fixtures/memory_rigor/llvm_round3/vmallocinfo.txt",
+    "source": "memdiff/data/llvm_round3/boot3/tpms/raw_export/vmallocinfo.txt",
+    "sha256": "2d9ec8624df5bd2370e75465717b2ab71db985b896ec3d955e7aaa00ef927c96"
+  },
+  {
+    "fixture": "tests/fixtures/memory_rigor/llvm_round3/memory_usage_test.expected",
+    "source": "pre-change parser /tmp/tpms-memory-rigor-baseline/performance/script/memory_usage_test/host/get_used_memory.py",
+    "sha256": "c1011b029ac769abb8b15bbcefc1adafdf111b24b163bac36bebeb1ad9cb7ba8"
+  },
+  {
+    "fixture": "tests/fixtures/memory_rigor/llvm_round3/process_memory_usage_test.expected",
+    "source": "pre-change parser /tmp/tpms-memory-rigor-baseline/performance/script/process_memory_usage_test/host/get_process_memory_usage.py",
+    "sha256": "0ccbe86ef43cc006101569395844f8807ee53eed9de550f673b5c4d0cecf63ce"
+  },
+  {
+    "fixture": "tests/fixtures/memory_rigor/llvm_round3/memory_info_test.expected",
+    "source": "pre-change parser /tmp/tpms-memory-rigor-baseline/performance/script/memory_info_test/host/get_memory_info.py",
+    "sha256": "5ab8e207aa0977cbe0dc8353b695b786b201d8d3e95582ba7dc8daef32812a40"
+  }
+]

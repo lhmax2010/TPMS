@@ -1,0 +1,30 @@
+{
+    "type": "performance",
+    "plan_path": "",
+    "script_path": "../performance/script",
+    "target_installable_path": "../performance/target_installable",
+    "enabled": {
+        "booting_time_test": "enable",
+        "memory_usage_test": "enable",
+        "nand_usage_test": "enable",
+        "rootfs_usage_test": "enable",
+        "app_launching_test": "enable",
+        "web_app_launching_test": "enable",
+        "dali_3d_ui_test": "disable",
+        "glbench_test": "disable",
+        "octane_test": "disable",
+        "process_memory_usage_test": "enable",
+        "memory_info_test": "enable",
+        "dependency_info_test": "disable",
+        "per_lib_memory_consumption_test": "disable",
+        "per_lib_time_consumption_test": "disable",
+        "efl_benchmark_test": "disable",
+        "applaunch_memstress_test": "disable",
+        "save_target_images": "disable",
+        "ffmpeg_benchmark_test": "enable",
+        "gstreamer_benchmark_test": "enable",
+        "tflite_benchmark_test": "enable",
+        "kernel_benchmark_test": "enable",
+        "dotnet_benchmark_test": "enable"
+    }
+}

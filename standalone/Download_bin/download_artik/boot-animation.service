@@ -1,0 +1,19 @@
+[Unit]
+Description=Boot Animation
+After=sound-server.service pulseaudio.service sound-init.service system-server.service
+Before=tizen-system.target
+ConditionPathExists=!/tmp/restart
+ConditionKernelCommandLine=|!bootmode=silent
+
+[Service]
+EnvironmentFile=/run/tizen-system-env
+EnvironmentFile=/run/xdg-root-env
+
+Type=oneshot
+Nice=-20
+ExecStart=/usr/bin/boot-animation --start
+ExecStart=/bin/sleep 2
+ExecStart=/usr/bin/direct_set_debug.sh --sdb-set
+
+[Install]
+WantedBy=tizen-system.target

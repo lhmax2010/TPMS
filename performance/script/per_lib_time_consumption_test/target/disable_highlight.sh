@@ -1,0 +1,1 @@
+../../per_lib_memory_consumption_test/target/disable_highlight.sh
